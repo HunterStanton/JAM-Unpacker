@@ -22,6 +22,8 @@ namespace JAMUnpacker
 
                 // Create our binary reader
                 BinaryReader reader = new BinaryReader((Stream)savegameStream);
+
+                Console.WriteLine(reader.ReadUInt32());
             }
 
             // Bit of error handling for when the file is either not there or unaccessible
