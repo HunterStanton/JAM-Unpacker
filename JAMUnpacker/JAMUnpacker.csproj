@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -43,6 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EndianReader\Endian.cs" />
+    <Compile Include="EndianReader\EndianReader.cs" />
+    <Compile Include="EndianReader\EndianWriter.cs" />
+    <Compile Include="EndianReader\IBaseStream.cs" />
+    <Compile Include="EndianReader\IReader.cs" />
+    <Compile Include="EndianReader\IWriter.cs" />
     <Compile Include="Reference\JAMArchive.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
