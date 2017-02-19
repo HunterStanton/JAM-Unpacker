@@ -58,19 +58,37 @@ namespace JAMUnpacker
                     Console.WriteLine(fileTypes[i]);
                 }
 
-                for(int i = 0; i < fileCount;i++)
+                // Handles UNLCKABL.JAM, which seems to use a different file table format, oddly
+                if (fileCount == 128 & fileTypeCount == 3)
                 {
-                    // Weird hack only needed for one JAM
-                    if(fileCount == 128 & fileTypeCount == 3 & temp == false)
+                    for (int i = 0; i < fileCount; i++)
                     {
+                        // Weird hack only needed for one JAM
+                        if (temp == false)
+                        {
+                            reader.ReadInt32();
+                            temp = true;
+                        }
+                        string filename = fileNames[reader.ReadInt16()];
+                        string filetype = fileTypes[reader.ReadInt16()];
                         reader.ReadInt32();
-                        temp = true;
-                    }
-                    string filename = fileNames[reader.ReadInt16()];
-                    string filetype = fileTypes[reader.ReadInt16()];
-                    reader.ReadInt32();
 
-                    Console.WriteLine(filename + "." + filetype);
+                        Console.WriteLine(filename + "." + filetype);
+                    }
+                }
+                else
+                {
+                    reader.ReadBlock(0x24);
+                    for (int i = 0; i < fileCount; i++)
+                    {
+                        // Read 24 bytes to get to the normal file table
+
+                        string filename = fileNames[reader.ReadInt16()];
+                        string filetype = fileTypes[reader.ReadInt16()];
+                        reader.ReadInt32();
+
+                        Console.WriteLine(filename + "." + filetype);
+                    }
                 }
 
                 Console.WriteLine("done!");
