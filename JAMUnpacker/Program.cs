@@ -21,9 +21,20 @@ namespace JAMUnpacker
                 FileStream savegameStream = new FileStream(args[0], FileMode.Open, FileAccess.ReadWrite);
 
                 // Create our binary reader
-                BinaryReader reader = new BinaryReader((Stream)savegameStream);
+                EndianReader reader = new EndianReader((Stream)savegameStream, Endian.LittleEndian);
 
-                Console.WriteLine(reader.ReadUInt32());
+                // ReadAscii is not technically correct here, because its expecting a null terminator when there isn't one, but it works so ¯\_(ツ)_/¯
+                Console.WriteLine("File magic: " + reader.ReadAscii(4));
+
+                // Don't know what these next two are, don't seem important though
+                reader.ReadInt32();
+                reader.ReadInt32();
+
+                // this IS null-terminated so ReadAscii is right this time!
+                Console.WriteLine("File comment: " + reader.ReadAscii(10));
+
+
+
             }
 
             // Bit of error handling for when the file is either not there or unaccessible

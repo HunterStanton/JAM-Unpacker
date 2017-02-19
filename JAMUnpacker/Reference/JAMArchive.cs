@@ -13,7 +13,6 @@ namespace JAMUnpacker
     /// </summary>
     class JAMArchive
     {
-        // JAMs are in platform-agnostic little-endian so this should be the same for all platforms
 
         public int Magic; // JAM2 or FSTA, not sure what the difference is, but the struct is the same
         public int unk; // could be a checksum of sorts?
