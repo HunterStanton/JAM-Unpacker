@@ -16,7 +16,7 @@ namespace JAMUnpacker
 
         public int Magic; // JAM2 or FSTA, not sure what the difference is, but the struct is the same
         public int unk; // could be a checksum of sorts?
-        public int unk2; // dunno lol
+        public int firstfileoffset; // pointer to first file
         public char[] type = new char[10]; // ive seen "none" and "safetest"
         public short fileCount; // the number of files inside the JAM
         public short fileTypes; // the number of filetypes inside the file + 1
