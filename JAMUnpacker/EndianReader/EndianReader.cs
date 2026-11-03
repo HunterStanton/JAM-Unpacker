@@ -78,7 +78,7 @@ namespace JAMUnpacker
 		/// </returns>
 		public byte ReadByte()
 		{
-			_stream.Read(_buffer, 0, 1);
+			_stream.ReadExactly(_buffer, 0, 1);
 			return _buffer[0];
 		}
 
@@ -101,7 +101,7 @@ namespace JAMUnpacker
 		/// </returns>
 		public ushort ReadUInt16()
 		{
-			_stream.Read(_buffer, 0, 2);
+			_stream.ReadExactly(_buffer, 0, 2);
 			if (_bigEndian)
 				return (ushort) ((_buffer[0] << 8) | _buffer[1]);
 			return (ushort) ((_buffer[1] << 8) | _buffer[0]);
@@ -126,7 +126,7 @@ namespace JAMUnpacker
 		/// </returns>
 		public uint ReadUInt32()
 		{
-			_stream.Read(_buffer, 0, 4);
+			_stream.ReadExactly(_buffer, 0, 4);
 			if (_bigEndian)
 				return (uint) ((_buffer[0] << 24) | (_buffer[1] << 16) | (_buffer[2] << 8) | _buffer[3]);
 			return (uint) ((_buffer[3] << 24) | (_buffer[2] << 16) | (_buffer[1] << 8) | _buffer[0]);
@@ -183,7 +183,7 @@ namespace JAMUnpacker
 		/// </returns>
 		public float ReadFloat()
 		{
-			_stream.Read(_buffer, 0, 4);
+			_stream.ReadExactly(_buffer, 0, 4);
 			if (BitConverter.IsLittleEndian == _bigEndian)
 			{
 				// Flip the bytes
@@ -294,7 +294,7 @@ namespace JAMUnpacker
 			string result;
 			fixed (sbyte* str = chars)
 			{
-				_stream.Read((byte[]) (Array) chars, 0, size);
+				_stream.ReadExactly((byte[]) (Array) chars, 0, size);
 				result = new string(str, 0, size, Encoding.UTF8);
 			}
 			return result;
@@ -352,7 +352,7 @@ namespace JAMUnpacker
 		public byte[] ReadBlock(int size)
 		{
 			var result = new byte[size];
-			_stream.Read(result, 0, size);
+			_stream.ReadExactly(result, 0, size);
 			return result;
 		}
 

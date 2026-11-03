@@ -57,6 +57,10 @@ namespace JAMUnpacker
             {
                 System.Console.WriteLine(e.Message);
             }
+            catch (EndOfStreamException)
+            {
+                System.Console.WriteLine("The JAM you are trying to unpack is truncated or corrupt.");
+            }
         }
     }
 }

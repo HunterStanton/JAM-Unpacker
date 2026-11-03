@@ -1,0 +1,96 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x86,     os: windows-latest }
+          - { rid: win-x64,     os: windows-latest }
+          - { rid: win-arm64,   os: windows-latest }
+          - { rid: linux-x64,   os: ubuntu-latest }
+          - { rid: linux-arm,   os: ubuntu-latest }
+          - { rid: linux-arm64, os: ubuntu-latest }
+          - { rid: osx-x64,     os: macos-latest }
+          - { rid: osx-arm64,   os: macos-latest }
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        shell: bash
+        run: |
+          dotnet publish JAMUnpacker/JAMUnpacker.csproj \
+            -c Release -r ${{ matrix.rid }} -warnaserror \
+            -o publish/${{ matrix.rid }}
+          cp COPYING README.md publish/${{ matrix.rid }}/
+
+      - name: Package (Windows)
+        if: startsWith(matrix.rid, 'win-')
+        shell: pwsh
+        run: Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath JAMUnpacker-${{ matrix.rid }}.zip
+
+      - name: Package (Linux / macOS)
+        if: ${{ !startsWith(matrix.rid, 'win-') }}
+        shell: bash
+        run: tar -czf JAMUnpacker-${{ matrix.rid }}.tar.gz -C publish/${{ matrix.rid }} .
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: JAMUnpacker-${{ matrix.rid }}
+          path: JAMUnpacker-${{ matrix.rid }}.*
+          if-no-files-found: error
+
+  release:
+    name: Publish rolling "latest" release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: latest-release
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Replace "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest dist/* \
+            --target "$GITHUB_SHA" \
+            --title "Latest build" \
+            --latest \
+            --notes "Automated build of ${GITHUB_SHA::7}.
+
+          Each archive contains a self-contained executable, and no .NET install is required to run and use the tool.
+
+          | Platform | File |
+          |---|---|
+          | Windows x86 / x64 / ARM64 | \`JAMUnpacker-win-*.zip\` |
+          | Linux x64 / ARM / ARM64 | \`JAMUnpacker-linux-*.tar.gz\` |
+          | macOS Intel / Apple Silicon | \`JAMUnpacker-osx-x64.tar.gz\` / \`JAMUnpacker-osx-arm64.tar.gz\` |
+
+          On macOS, if Gatekeeper blocks it upon trying to run it, run \`xattr -d com.apple.quarantine JAMUnpacker\`."
