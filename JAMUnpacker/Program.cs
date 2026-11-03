@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -11,90 +11,36 @@ namespace JAMUnpacker
     {
         static void Main(string[] args)
         {
-            if(args.Length != 1)
+            if (args.Length < 1 || args.Length > 2)
             {
-                Console.WriteLine("JAMUnpacker\nUnpacks JAM files used by the relatively unknown game, The Grim Adventures of Billy and Mandy.\n\nUsage: JAMUnpacker <jamfile.jam>");
+                Console.WriteLine("JAMUnpacker\nUnpacks JAM files used by the relatively unknown game, The Grim Adventures of Billy and Mandy.\n\nUsage: JAMUnpacker <jamfile.jam> [output directory]");
                 return;
             }
             try
             {
-                String[] fileNames;
-                String[] fileTypes;
+                string outputDirectory = args.Length == 2 ? args[1] : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0])), Path.GetFileNameWithoutExtension(args[0]) + "_unpacked");
 
-                // Stupid temp bool needed to enable a nasty hack for one JAM file
-                bool temp = false;
-
-                FileStream savegameStream = new FileStream(args[0], FileMode.Open, FileAccess.ReadWrite);
-
-                // Create our binary reader
-                EndianReader reader = new EndianReader((Stream)savegameStream, Endian.LittleEndian);
-
-                // ReadAscii is not technically correct here, because its expecting a null terminator when there isn't one, but it works so ¯\_(ツ)_/¯
-                Console.WriteLine("File magic: " + reader.ReadAscii(4));
-
-                // Don't know what this next one, doesn't seem important though
-                reader.ReadInt32();
-
-                int firstFileOffset = reader.ReadInt32();
-
-                // this IS null-terminated so ReadAscii is right this time!
-                Console.WriteLine("File comment: " + reader.ReadAscii(0x10));
-
-                short fileCount = reader.ReadInt16();
-                short fileTypeCount = reader.ReadInt16();
-
-                fileNames = new String[fileCount];
-                fileTypes = new String[fileTypeCount];
-
-                for(int i = 0;i < fileCount;i++)
+                using (FileStream jamStream = new FileStream(args[0], FileMode.Open, FileAccess.Read))
                 {
-                    fileNames[i] = reader.ReadAscii(8);
-                    Console.WriteLine(fileNames[i]);
-                }
+                    EndianReader reader = new EndianReader(jamStream, Endian.LittleEndian);
+                    JAMArchive jam = JAMArchive.Read(reader);
 
-                for (int i = 0; i < fileTypeCount; i++)
-                {
-                   fileTypes[i] = reader.ReadAscii(4);
-                    Console.WriteLine(fileTypes[i]);
-                }
+                    Console.WriteLine("File magic: " + jam.Magic);
+                    Console.WriteLine("File comment: " + jam.Comment);
 
-                // Handles UNLCKABL.JAM, which seems to use a different file table format, oddly
-                if (fileCount == 128 & fileTypeCount == 3)
-                {
-                    for (int i = 0; i < fileCount; i++)
+                    foreach (JAMArchive.FileEntry file in jam.Files)
                     {
-                        // Weird hack only needed for one JAM
-                        if (temp == false)
-                        {
-                            reader.ReadInt32();
-                            temp = true;
-                        }
-                        string filename = fileNames[reader.ReadInt16()];
-                        string filetype = fileTypes[reader.ReadInt16()];
-                        reader.ReadInt32();
+                        string outputPath = Path.Combine(outputDirectory, file.Path);
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
-                        Console.WriteLine(filename + "." + filetype);
+                        reader.SeekTo(file.Offset);
+                        File.WriteAllBytes(outputPath, reader.ReadBlock((int)file.Size));
+
+                        Console.WriteLine(file.Path);
                     }
+
+                    Console.WriteLine("Unpacked " + jam.Files.Count + " files to " + outputDirectory);
                 }
-                else
-                {
-                    reader.ReadBlock(0x24);
-                    for (int i = 0; i < fileCount; i++)
-                    {
-                        // Read 24 bytes to get to the normal file table
-
-                        string filename = fileNames[reader.ReadInt16()];
-                        string filetype = fileTypes[reader.ReadInt16()];
-                        reader.ReadInt32();
-
-                        Console.WriteLine(filename + "." + filetype);
-                    }
-                }
-
-                Console.WriteLine("done!");
-
-
-
             }
 
             // Bit of error handling for when the file is either not there or unaccessible
@@ -106,6 +52,10 @@ namespace JAMUnpacker
             catch (UnauthorizedAccessException)
             {
                 System.Console.WriteLine("The JAM you are trying to unpack could not be unpacked because access was denied.");
+            }
+            catch (InvalidDataException e)
+            {
+                System.Console.WriteLine(e.Message);
             }
         }
     }

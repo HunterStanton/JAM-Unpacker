@@ -249,16 +249,13 @@ namespace JAMUnpacker
 		/// <returns>
 		///     The ASCII string that was read, with any 0 padding bytes stripped.
 		/// </returns>
-		public unsafe string ReadAscii(int size)
+		public string ReadAscii(int size)
 		{
-			var chars = new sbyte[size];
-			string result;
-			fixed (sbyte* str = chars)
-			{
-				_stream.Read((byte[]) (Array) chars, 0, size);
-				result = new string(str);
-			}
-			return result;
+			byte[] chars = ReadBlock(size);
+			int length = Array.IndexOf(chars, (byte) 0);
+			if (length < 0)
+				length = size;
+			return Encoding.ASCII.GetString(chars, 0, length);
 		}
 
 		/// <summary>
